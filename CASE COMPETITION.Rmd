@@ -1,0 +1,294 @@
+---
+title: "ASNA Case Competition"
+author: "Zhuoying (Karen) Li"
+date: '2019-09-23'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r pressure, echo=FALSE}
+library(dplyr)
+library(readxl)
+library(mice)
+#library(xlsx)
+tb_2018 <- read_excel("~/Downloads/ASNA 2020 Case Competition -- Database.xlsx",      sheet = "2018")
+tb_2017 <- read_excel("~/Downloads/ASNA 2020 Case Competition -- Database.xlsx",    sheet = "2017")
+tb_2016 <- read_excel("~/Downloads/ASNA 2020 Case Competition -- Database.xlsx",  sheet = "2016")
+tb_2015 <- read_excel("~/Downloads/ASNA 2020 Case Competition -- Database.xlsx",   sheet = "2015")
+tb_2014 <- read_excel("~/Downloads/ASNA 2020 Case Competition -- Database.xlsx",     sheet = "2014")
+tb_2013 <- read_excel("~/Downloads/ASNA 2020 Case Competition -- Database.xlsx",   sheet = "2013")
+tb_2012 <- read_excel("~/Downloads/ASNA 2020 Case Competition -- Database.xlsx",      sheet = "2012")
+tb_2011 <- read_excel("~/Downloads/ASNA 2020 Case Competition -- Database.xlsx",     sheet = "2011")
+tb_2010 <- read_excel("~/Downloads/ASNA 2020 Case Competition -- Database.xlsx",   sheet = "2010")
+tb_2009 <- read_excel("~/Downloads/ASNA 2020 Case Competition -- Database.xlsx",    sheet = "2009")
+tb_2008 <- read_excel("~/Downloads/ASNA 2020 Case Competition -- Database.xlsx",      sheet = "2008")
+
+bigtb=rbind(tb_2008,tb_2009,tb_2010,tb_2011,tb_2012,tb_2013,tb_2014,tb_2015,tb_2016,tb_2017,tb_2018)
+
+
+```
+
+```{r}
+ 
+frequency_tb=data.frame(table(bigtb$'Bridge ID'))
+frequency_tb=arrange(frequency_tb,frequency_tb$Freq)
+abc=bigtb[ which(bigtb$'Bridge ID'=="HLN999X86202700E01153"),]   #extract rows of the most frequently entered bridge ID
+fr=data.frame(table(do.call(paste,abc[-1])))   
+fr=arrange(fr,fr$'Freq')
+
+newrow=abc[which(abc$'Year Built'==1977),]
+newrow=newrow[8,]
+
+newtb3 = bigtb[!bigtb$'Bridge ID' =="HLN999X86202700E01153",]  #delete all the rows with the bridge ID
+newtb3= rbind(newrow,newtb3)    #add the new row
+newtb3= distinct(newtb3)  #remove duplicate rows
+newtb3 = arrange(newtb3,newtb3$`Bridge ID`)
+
+frequency_tb2=data.frame(table(newtb3$'Bridge ID'))
+frequency_tb2=arrange(frequency_tb2,frequency_tb2$Freq)
+tail(frequency_tb2)
+
+
+#newtb3<-newtb3[!((newtb3$`Year of Most Recent Reconstruction`> newtb3$`year`) | (newtb3$`Year of Most Recent Reconstruction`<newtb3$`Year Built`)),]  # ~ 130 rows
+
+```
+
+
+```{r}
+abc2=newtb3[newtb3$'Bridge ID'=='FBA631L18702126N04706',]
+fr2=data.frame(table(do.call(paste,abc2[-1])))   
+fr2=arrange(fr2,fr2$'Freq')
+newrow2=abc2[which(abc2$'Year Built'==1982),]
+
+newrow2=newrow2[2,]
+newtb3 = newtb3[!newtb3$'Bridge ID' =="FBA631L18702126N04706",]  #delete all the rows with the bridge ID
+newtb3= rbind(newrow2,newtb3)    #add the new row
+
+frequency_tb2=data.frame(table(newtb3$'Bridge ID'))
+frequency_tb2=arrange(frequency_tb2,frequency_tb2$Freq)
+tail(frequency_tb2)
+
+#60510
+```
+```{r}
+newtb3=newtb3[!is.na(newtb3$`Inspection Date`),]  
+newtb3=newtb3[!newtb3$`Inspection Date`=="99/99",]   
+lifetime=newtb3[,21]-newtb3[,3]
+newtb3=cbind(newtb3,lifetime)
+names(newtb3)[22] <- "Lifetime"
+newtb3=newtb3[!newtb3$Lifetime<0,]    
+#newtb3=na.omit(newtb3[,c(2:4,6:13)])
+#60496
+```
+
+
+```{r}
+# to create a condition table
+
+BridgeID= data.frame(newtb3[,1])
+cond1=c()  #
+cond2=c()  #
+cond3=c()  #
+cond4=c()  #
+cond5=c()  #
+cond7=c()  #
+cond8=c()  #
+cond9=c()  #
+number_f1=c()
+
+
+#T=0, F=1
+
+for (i in 1:nrow(BridgeID)){
+  
+  if( as.numeric(newtb3[i,21]) > as.numeric(newtb3[i,3]) ){cond1=c(cond1,0)
+  } else {cond1=c(cond1,1)}     # cond1: tab year >  year of reconstruction > year built
+  
+   if(  newtb3[i,14]<=3 & newtb3[i,15]==0 ){cond2=c(cond2,0)
+  } else {cond2=c(cond2,1)}     # cond2: assessment <=3, structural improvement=0
+  
+ # if( as.numeric(newtb3[i,13]) > 1.5*as.numeric(newtb3[i,12]) & !is.na(newtb3[i,12]) & !is.na(newtb3[i,13]) ){cond3=c(cond3,0) 
+ # } else {cond3=c(cond3,1)}     # cond3: Deck width > 1.5*Road width > 0
+  
+  
+  insp=gsub("/","",newtb3[i,17])
+  inspyear=as.integer(substring(insp, 2, 3))
+  inspdate=as.integer(substring(insp, 2, 3))
+  if( inspyear>newtb3[i,3] & inspyear<newtb3[i,21] & !is.na(newtb3[i,20])  ){cond4=c(cond4,0)
+  } else {cond4=c(cond4,1)}     # cond4: year built < inspection date < tab year
+  
+  if(  newtb3[i,18]>0 | is.na(newtb3[i,18])   ){cond5=c(cond5,0)
+  } else {cond5=c(cond5,1)}     # cond5: Estimated Improvement Cost !< 0
+  
+  
+  
+  if( inspdate<=12&!is.na(newtb3[i,20])){cond7=c(cond7,0)    # cond7: 1 < month of inspection date < 12
+  } else {cond7=c(cond7,1)}
+  
+  sameID=newtb3[newtb3$`Bridge ID`==BridgeID[i,1],]
+   sameID=sameID[,-5]
+   sameID=sameID[,-(13:20)]
+   test=data.frame(table(do.call(paste,sameID[-1]))) 
+   
+  if( nrow(test)==1 ){cond8=c(cond8,0)    # cond8: same BridgeID, same [2:13,i] 
+  } else {cond8=c(cond8,1)} 
+  
+   sumf1=cond1[i]+cond2[i]+cond4[i]+cond5[i]+cond7[i]+cond8[i]
+  number_f1=c(number_f1,sumf1)
+  
+}
+
+conditiontb=cbind(BridgeID,cond1,cond2,cond4,cond5,cond7,cond8,number_f1)
+
+
+```
+
+
+```{r}
+rm(cond9)
+number_f=c()
+cond9=c()
+for (r in 1:nrow(conditiontb)){
+  sameIDass=newtb3[newtb3$`Bridge ID`==BridgeID[r,1],]
+  sameIDass=sameIDass[,-(2:13)]
+  sameIDass=sameIDass[,-(3:7)]
+  rc=sameIDass[1,3]
+  if(is.na(rc)){rc=0}else{rc=as.numeric(rc)}
+  
+  ass1=as.numeric(sameIDass[1,2])
+  ass2=as.numeric(sameIDass[nrow(sameIDass),2])
+
+   if(is.na(ass1)){ass1=0}else{ass1=as.numeric(ass1)}
+   if(is.na(ass2)){ass2=0}else{ass2=as.numeric(ass2)}
+  check=is.na(sameIDass[1:nrow(sameIDass),3])
+  n=sum(check,na.rm=TRUE)
+  
+   if(n==nrow(sameIDass)){cond9=c(cond9,0) }   
+   else if(  (rc<2008) & (ass2 >= ass1) ){cond9=c(cond9,0)}
+  else if ( (rc>=2008) & (rc<=2018) & (ass2>=0)){ cond9=c(cond9,0) }
+  else{cond9=c(cond9,1)}
+
+  sumf= cond1[r]+cond2[r]+cond4[r]+cond5[r]+cond7[r]+cond8[r]+cond9[r]
+  number_f=c(number_f,sumf)
+}
+
+conditiontb=cbind(BridgeID,cond1,cond2,cond4,cond5,cond7,cond8,cond9,number_f)
+fr_cond=data.frame(table(conditiontb$'number_f'))
+fr_cond=arrange(fr_cond,fr_cond$Freq)
+```
+
+
+
+```{r}
+rmo=c()
+for (k in 1:nrow(newtb2)){
+  if(conditiontb[k,9]>=4){
+    rmo=c(rmo,k)
+    #conditiontb=conditiontb[-c(k),]
+  }
+
+}   #53382
+
+newtb2=newtb2[-rmo,]
+```
+
+
+```{r}
+newtb2=newtb2[newtb2[,3]!=1,]
+newtb2=newtb2[!is.na(newtb2$Road.Type),]
+newtb2=newtb2[!is.na(newtb2$Number.of.Lanes),]
+newtb2=newtb2[!is.na(newtb2$Operational.Status),]
+newtb2=newtb2[!is.na(newtb2$Structure.Material),]
+newtb2=newtb2[!is.na(newtb2$Deck.Material),]
+newtb2=newtb2[!is.na(newtb2$Bridge.Design),]
+newtb2=newtb2[!is.na(newtb2$Number.of.Spans),]
+newtb2=newtb2[!is.na(newtb2$Bridge.Length),]
+newtb2=newtb2[!is.na(newtb2$Road.Width),]
+newtb2=newtb2[!is.na(newtb2$Deck.Width),]
+
+newtb2=newtb2[,-c(16:21)]
+
+
+```
+
+
+```{r}
+ID2=data.frame(newtb2[,1])
+for (a in 1:nrow(newtb2)){
+   sameID2=newtb2[newtb2[,1]==toString(ID2[a,1]),-c(16:22)]
+   sameID2=sameID2[,-c(5,14:15)]
+   
+   test2=data.frame(table(sameID2))
+   test2=arrange(test2,test2$Freq)
+   
+  #if(conditiontb[a,2]==1){
+    #newtb2[a,20]=NA
+  #}else if(conditiontb[a,3]==1){
+    #newtb2[a,15]=NA}
+   if( nrow(test2)!=1){
+    newtb2[newtb2[,1]==toString(ID2[a,1]),c(2:4)]=test2[nrow(test2),2:4]
+    newtb2[newtb2[,1]==toString(ID2[a,1]),c(6:13)]=test2[nrow(test2),5:12]
+  }
+    
+}
+```
+
+
+```{r}
+newtb=newtb[,-c(16:20)]
+newtb=mice(newtb,meth='cart')
+newtb2=data.frame(newtb$data)
+tobind=newtb3[,c(16:22)]
+newtb2=cbind(newtb2,tobind)
+
+newtb2=newtb2[!newtb2$Year.Built==1,]
+
+
+newtb_bu=newtb2
+
+
+
+newtb2[is.na(newtb2$Structural.Improvement.Needed),]
+```
+
+
+
+```{r}
+write.table(newtb2, file="newtb2.csv",sep=",")
+```
+
+
+
+
+```{r}
+#test=newtb2[newtb2$Assessment<=3,]
+fit <- lm( bigtb$`Structural Improvement Needed` ~ bigtb$`Road Type` + bigtb$`Year Built` + bigtb$`Number of Lanes` +bigtb$`Avg Daily Traffic` + bigtb$`Operational Status` + bigtb $`Structure Material` +bigtb$`Deck Material` +bigtb$`Bridge Design` + bigtb$`Number of Spans`+ bigtb$Assessment , data=bigtb)
+
+anova(fit)
+
+```
+
+
+```{r}
+newtb2[is.na(newtb2$`Structural improvement Needed`) & newtb2$Assessment<=3,15 ]=0
+newtb2[is.na(newtb2$`Structural improvement Needed`) & newtb2$Assessment==4,15 ]=1
+newtb2[is.na(newtb2$`Structural improvement Needed`) & newtb2$Assessment==5,15 ]=2
+newtb2[is.na(newtb2$`Structural improvement Needed`) & newtb2$Assessment==6, 15]=3
+newtb2[is.na(newtb2$`Structural improvement Needed`) & newtb2$Assessment==7,15 ]=3
+
+#as.integer(runif(13, min=0, max=626238))
+newtb2[is.na(newtb2$`Avg Daily Traffic`),5]=as.integer(runif(13, min=0, max=626238))
+
+newtb2[is.na(newtb2$`Avg Daily Traffic`),]
+
+```
+
+
+
+
+
+
