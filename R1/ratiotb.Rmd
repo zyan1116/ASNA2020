@@ -1,0 +1,90 @@
+---
+title: "round1"
+author: "Zhuoying (Karen) Li"
+date: '2019-11-15'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readr)
+newtb2 <- read_csv("~/Desktop/newtb2.csv")
+```
+
+
+```{r}
+#number of lanes
+newtb2[(newtb2$`Number of Lanes`<=2),4]=2
+newtb2[(newtb2$`Number of Lanes`>2)&(newtb2$`Number of Lanes`<=6),4]=6
+newtb2[(newtb2$`Number of Lanes`>6)&(newtb2$`Number of Lanes`<=10),4]=10
+newtb2[(newtb2$`Number of Lanes`>10),4] = 14
+```
+
+```{r}
+#avg daily traffic
+newtb2[(newtb2$`Avg Daily Traffic`<=100000),5]=100000
+newtb2[(newtb2$`Avg Daily Traffic`>100000)&(newtb2$`Avg Daily Traffic`<=300000),5]=300000
+newtb2[(newtb2$`Avg Daily Traffic`>300000)&(newtb2$`Avg Daily Traffic`<=500000),5]=500000
+newtb2[(newtb2$`Avg Daily Traffic`>500000),5]=700000
+```
+
+
+```{r}
+#Bridge Length
+newtb2[(newtb2$`Bridge Length`<=1000),11]=1000
+newtb2[(newtb2$`Bridge Length`>1000)&(newtb2$`Bridge Length`<=2000),11]=2000
+newtb2[(newtb2$`Bridge Length`>2000)&(newtb2$`Bridge Length`<=3000),11]=3000
+newtb2[(newtb2$`Bridge Length`>3000)&(newtb2$`Bridge Length`<=4000),11]=4000
+newtb2[(newtb2$`Bridge Length`>4000),11]=5000
+```
+
+
+
+
+```{r}
+count=data.frame(cbind(newtb2$`Bridge ID`,newtb2$`Road Type`,newtb2$`Number of Lanes`,newtb2$`Avg Daily Traffic`,newtb2$`Operational Status`,newtb2$`Bridge Length`))
+```
+
+```{r}
+ratio_tb=data.frame(table(do.call(paste,count[-1])))
+ratio=as.numeric(ratio_tb$Freq)/40203
+ratio_tb=data.frame(cbind(ratio_tb,ratio))
+
+```
+
+```{r}
+
+type=c()
+lane=c()
+avg=c()
+status=c()
+length=c()
+for (i in 1:91){
+  str <- as.character(ratio_tb[i,1])
+  result_1 <- strsplit(str,"[[:space:]]")[[1]][1]
+  result_2 <- strsplit(str,"[[:space:]]")[[1]][2]
+  result_3 <- strsplit(str,"[[:space:]]")[[1]][3]
+  result_4 <- strsplit(str,"[[:space:]]")[[1]][4]
+  result_5 <- strsplit(str,"[[:space:]]")[[1]][5]
+  result <- list(result_1,result_2,result_3,result_4,result_5)
+  type=c(type,as.numeric(result_1))
+  lane=c(lane,as.numeric(result_2))
+  avg=c(avg,as.numeric(result_3))
+  status=c(status,as.numeric(result_4))
+  length=c(length,as.numeric(result_5))
+} 
+
+
+```
+
+```{r}
+ratio_tb=data.frame(cbind(type,lane,avg,status,length,ratio_tb$Freq,ratio_tb$ratio))
+```
+
+```{r}
+write_csv(ratio_tb, "ratio_table.csv")
+```
+
